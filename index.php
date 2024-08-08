@@ -1,0 +1,30 @@
+<?php
+// YouTube video ID
+$videoId = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_STRING);
+
+// Validate video ID
+if (empty($videoId) || !preg_match('/^[a-zA-Z0-9_-]{11}$/', $videoId)) {
+    echo 'Invalid video ID.';
+    exit;
+}
+
+// Fetch YouTube page content using cURL
+$url = "https://www.youtube.com/watch?v=$videoId";
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$html = curl_exec($ch);
+curl_close($ch);
+
+// Find HLS manifest URL
+if (preg_match('/"hlsManifestUrl":"([^"]+)"/', $html, $matches)) {
+    $hlsManifestUrl = json_decode('"' . $matches[1] . '"'); // Decode the URL if necessary
+    if (filter_var($hlsManifestUrl, FILTER_VALIDATE_URL)) {
+        header("Location: $hlsManifestUrl");
+        exit;
+    } else {
+        echo 'Invalid HLS manifest URL.';
+    }
+} else {
+    echo 'HLS manifest URL not found.';
+}
+?>
